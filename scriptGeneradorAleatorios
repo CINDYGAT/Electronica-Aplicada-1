@@ -1,0 +1,62 @@
+import csv
+import io
+import random
+import time
+from datetime import datetime, timezone
+import requests
+
+# Configuración
+API_HOST = "192.168.1.100"  # Cambia por la IP REAL de tu laptop
+API_PORT = 8000
+URL = f"http://{API_HOST}:{API_PORT}/upload-csv/"
+
+DEVICE_ID = "TEST_PC_001"
+
+def generar_dato_aleatorio():
+    """Genera una fila de datos simulados"""
+    distancia = round(random.uniform(20.0, 150.0), 2)   # cm
+    aceleracion = round(random.uniform(8.5, 10.5), 2)   # m/s²
+    humedad = round(random.uniform(30.0, 80.0), 2)      # %
+    # Timestamp actual en ISO 8601 con zona horaria
+    timestamp = datetime.now(timezone.utc).isoformat()
+    return {
+        "device_id": DEVICE_ID,
+        "distancia": distancia,
+        "aceleracion": aceleracion,
+        "humedad": humedad,
+        "timestamp": timestamp
+    }
+
+def enviar_datos(datos_lista):
+    """Envía una lista de diccionarios como CSV a la API"""
+    # Crear el contenido CSV en memoria
+    output = io.StringIO()
+    fieldnames = ["device_id", "distancia", "aceleracion", "humedad", "timestamp"]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(datos_lista)
+    csv_content = output.getvalue()
+    
+    # Preparar la petición
+    files = {"file": ("datos.csv", csv_content, "text/csv")}
+    try:
+        response = requests.post(URL, files=files)
+        if response.status_code == 201:
+            print(f"✅ Datos enviados correctamente. Respuesta: {response.json()}")
+        else:
+            print(f"❌ Error {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"❌ Falló la conexión: {e}")
+
+# --- Bucle principal ---
+if __name__ == "__main__":
+    print(f"Enviando datos a {URL} (presiona Ctrl+C para detener)")
+    while True:
+        # Generar entre 1 y 5 mediciones por lote
+        num_mediciones = random.randint(1, 5)
+        lote = [generar_dato_aleatorio() for _ in range(num_mediciones)]
+        enviar_datos(lote)
+        # Esperar entre 10 y 30 segundos antes del siguiente envío
+        intervalo = random.randint(10, 30)
+        print(f"Esperando {intervalo} segundos...\n")
+        time.sleep(intervalo)
