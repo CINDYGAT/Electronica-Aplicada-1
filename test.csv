@@ -1,0 +1,3 @@
+device_id,distancia,aceleracion,humedad,timestamp
+ESP32_001,123.45,9.81,65.0,2025-04-04T12:00:00
+ESP32_002,125.55,10.81,67.0,2025-04-04T12:00:00
